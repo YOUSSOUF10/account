@@ -1,34 +1,28 @@
 FROM python:3.11-slim
 
-# Evite les prompts interactifs apt
 ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
-# Installer dépendances système
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libreoffice \
  && rm -rf /var/lib/apt/lists/*
 
-# Copier requirements
 COPY requirements.txt .
 
-# Installer dépendances Python depuis Internet (PyPI)
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copier le code
 COPY . .
 
-# Rendre le script exécutable (safe)
 RUN chmod +x docker/entrypoint.sh || true
 
-# Volume logs
+# 🔥 FIX ICI
+RUN mkdir -p /app/data && chmod -R 777 /app/data
+
 VOLUME ["/var/log"]
 
-# Exposer port
 EXPOSE 8080
 
-# Commande de démarrage
 CMD ["./docker/entrypoint.sh"]
