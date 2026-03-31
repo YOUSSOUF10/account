@@ -10,11 +10,16 @@
 $ mvn clean install
 
 
-FROM docker.artifactory-dogen.group.echonet.net.intra/python:3.11
+FROM python:3.11
 
 WORKDIR /app
 
 COPY requirements.txt /tmp/requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    libreoffice \
+ && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY . .
