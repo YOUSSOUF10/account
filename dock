@@ -45,3 +45,12 @@ spec:
 
 
 http://deepresearch-api.deepresearch.svc.cluster.local:8000
+
+
+
+oc run curltest --rm -it --image=curlimages/curl:8.7.1 -n deepresearch -- \
+  curl -v http://deepresearch-api:8000
+
+
+oc run curltest --rm -it --image=curlimages/curl:8.7.1 -n <namespace-apigee> -- \
+  curl -v http://deepresearch-api.deepresearch.svc.cluster.local:8000
