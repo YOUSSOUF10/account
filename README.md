@@ -9,24 +9,37 @@
 
 $ mvn clean install
 
+FROM python:3.11-slim
 
-FROM python:3.11
+# Evite les prompts interactifs apt
+ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
-COPY requirements.txt /tmp/requirements.txt
+# Installer dépendances système
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libreoffice \
  && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+# Copier requirements
+COPY requirements.txt .
 
+# Installer dépendances Python depuis Internet (PyPI)
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copier le code
 COPY . .
-RUN chmod +x docker/entrypoint.sh
 
+# Rendre le script exécutable (safe)
+RUN chmod +x docker/entrypoint.sh || true
+
+# Volume logs
 VOLUME ["/var/log"]
 
+# Exposer port
 EXPOSE 8080
 
+# Commande de démarrage
 CMD ["./docker/entrypoint.sh"]
