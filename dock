@@ -26,3 +26,22 @@ VOLUME ["/var/log"]
 EXPOSE 8080
 
 CMD ["./docker/entrypoint.sh"]
+
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: deepresearch-api
+  namespace: deepresearch
+spec:
+  selector:
+    app: deepresearch-api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+
+
+http://deepresearch-api.deepresearch.svc.cluster.local:8000
