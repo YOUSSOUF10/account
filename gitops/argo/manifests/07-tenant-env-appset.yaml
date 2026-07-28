@@ -1,0 +1,70 @@
+# AppSet 07 — Tenant ApigeeEnvironment + ApigeeEnvGroup
+#
+# Consomme DEUX charts OFFICIELS Google :
+#   - apigee-env         → ApigeeEnvironment (runtime, synchronizer, UDCA)
+#   - apigee-virtualhost → ApigeeEnvGroup + routingRules + virtualhosts
+#
+# Skip pour les tenants type: infra (ils n'ont pas d'env Apigee).
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apigee-tenant-env-appset
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+
+  generators:
+    - matrix:
+        generators:
+          - git:
+              repoURL: https://gitlab..com/<UID>/apigee-gitops.git
+              revision: HEAD
+              files:
+                - path: argo/generators/tenants/*.yaml
+          - list:
+              elements:
+                - cluster: cluster-A
+                # - cluster: cluster-B
+
+  template:
+    metadata:
+      name: 'apigee-env-{{.tenant}}-{{.cluster}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "30"
+    spec:
+      project: default
+      destination:
+        name: '{{.cluster}}'
+        namespace: apigee
+      sources:
+        # Chart 1 : ApigeeEnvironment
+        - repoURL: oci://icr.io/<UID>/helm-charts
+          chart: apigee-env
+          targetRevision: 1.16.0
+          helm:
+            releaseName: 'env-{{.tenant}}'
+            ignoreMissingValueFiles: true
+            valueFiles:
+              - $values/values/tenants/env-common/values-env-common.yaml
+              - $values/values/tenants/{{.tenant}}/values-{{.tenant}}.yaml
+              - $values/values/tenants/{{.tenant}}/clusters/values-{{.tenant}}-{{.cluster}}.yaml
+        # Chart 2 : Virtualhost (EnvGroup)
+        - repoURL: oci://icr.io/<UID>/helm-charts
+          chart: apigee-virtualhost
+          targetRevision: 1.16.0
+          helm:
+            releaseName: 'vhost-{{.tenant}}'
+            ignoreMissingValueFiles: true
+            valueFiles:
+              - $values/values/tenants/{{.tenant}}/values-{{.tenant}}-virtualhost.yaml
+        # Values
+        - repoURL: https://gitlab..com/<UID>/apigee-gitops.git
+          targetRevision: HEAD
+          ref: values
+      syncPolicy:
+        automated:
+          prune: false
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true

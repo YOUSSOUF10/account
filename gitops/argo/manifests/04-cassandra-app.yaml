@@ -1,0 +1,58 @@
+# Application 04 — Cassandra (ApigeeDatastore)
+#
+# Consomme le chart OFFICIEL Google "apigee-datastore".
+# Toujours une App dédiée (pas AppSet) — piloté par values-topology.yaml.
+#
+# Le chart Google gère en interne :
+#   - Le StatefulSet Cassandra (avec les bons sidecar containers)
+#   - Les Services headless
+#   - Les PVCs
+#   - Le RBAC
+#   - Les hooks de backup (si activé)
+#
+# ⚠️ Les CRDs Apigee doivent être en place AVANT (wave 5 < wave 15).
+#     La CR ApigeeDatastore est une instance de ces CRDs.
+#
+# Phase 1 : mono-DC (cluster-A), values-topology.yaml en état initial
+# Phase 2 : multi-DC (cluster-A + cluster-B), voir docs/cassandra-phase2.md
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apigee-cassandra
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
+spec:
+  project: default
+  destination:
+    name: cluster-A
+    namespace: apigee
+  sources:
+    # Chart Google officiel — datastore
+    - repoURL: oci://icr.io/<UID>/helm-charts
+      chart: apigee-datastore
+      targetRevision: 1.16.0
+      helm:
+        releaseName: apigee-datastore
+        ignoreMissingValueFiles: true
+        valueFiles:
+          - $values/values/platform/datastore/values-common.yaml
+          - $values/values/platform/datastore/values-topology.yaml
+          - $values/values/platform/datastore/clusters/values-dc1.yaml
+    # Values
+    - repoURL: https://gitlab..com/<UID>/apigee-gitops.git
+      targetRevision: HEAD
+      ref: values
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/replicas
+        - /spec/template/spec/containers/0/resources

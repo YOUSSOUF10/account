@@ -1,0 +1,32 @@
+# values/tenants/prod-test/values-prod-test-virtualhost.yaml
+# ============================================================================
+# Surcharges du chart Google "apigee-virtualhost" pour prod-test.
+# Ce chart crée l'ApigeeEnvGroup avec les routing rules et virtualhosts.
+# ============================================================================
+
+namespace: apigee
+
+org: "my-apigee-org"
+
+envgroup: "prod-test-group"
+
+# Hostnames exposés par ce tenant
+virtualhosts:
+  - name: api-test
+    hostnames:
+      - "api-test.mondomaine.com"
+      - "api-test-internal.mondomaine.com"
+    # Secret TLS de la gateway (créé par ExternalSecret)
+    sslSecret: apigee-tls-prod-test
+
+# Environnements rattachés à cet envgroup
+routingRules:
+  - envs:
+      - "prod-test"
+    hosts:
+      - "api-test.mondomaine.com"
+      - "api-test-internal.mondomaine.com"
+
+# Référence à la gateway (dedicated pour prod-test)
+ingressGateways:
+  - name: apigee-ingress-prod-test

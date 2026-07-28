@@ -1,0 +1,58 @@
+# AppSet 08 — Tenant exposure Traefik (chart LOCAL apigee-extras)
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apigee-tenant-exposure-appset
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - matrix:
+        generators:
+          - git:
+              repoURL: https://gitlab..com/<UID>/apigee-gitops.git
+              revision: HEAD
+              files:
+                - path: argo/generators/tenants/*.yaml
+          - list:
+              elements:
+                - cluster: cluster-A
+                # - cluster: cluster-B
+  template:
+    metadata:
+      name: 'apigee-exposure-{{.tenant}}-{{.cluster}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "35"
+    spec:
+      project: default
+      destination:
+        name: '{{.cluster}}'
+        namespace: apigee
+      sources:
+        - repoURL: https://gitlab..com/<UID>/apigee-gitops.git
+          targetRevision: HEAD
+          path: charts/apigee-extras
+          helm:
+            releaseName: 'exposure-{{.tenant}}'
+            ignoreMissingValueFiles: true
+            valueFiles:
+              - $values/values/tenants/extras-common.yaml
+              - $values/values/tenants/{{.tenant}}/values-{{.tenant}}-extras.yaml
+            parameters:
+              - name: render.only
+                value: exposure
+              - name: tenant.name
+                value: '{{.tenant}}'
+              - name: tenant.cluster
+                value: '{{.cluster}}'
+              - name: tenant.UID
+                value: '{{.UID}}'
+        - repoURL: https://gitlab..com/<UID>/apigee-gitops.git
+          targetRevision: HEAD
+          ref: values
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true

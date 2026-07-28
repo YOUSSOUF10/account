@@ -1,0 +1,24 @@
+# values/tenants/dev/values-dev.yaml — format chart Google "apigee-env"
+namespace: apigee
+envName: "dev"
+org: "my-apigee-org"
+
+runtime:
+  replicaCountMin: 1
+  replicaCountMax: 2
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+synchronizer:
+  replicaCountMin: 1
+  replicaCountMax: 1
+  serviceAccountRef: apigee-synchronizer-svc-account-dev
+
+udca:
+  replicaCountMin: 1
+  replicaCountMax: 1
+  serviceAccountRef: apigee-udca-svc-account-dev

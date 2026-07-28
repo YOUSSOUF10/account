@@ -1,0 +1,66 @@
+# AppSet 06 — Tenant IngressGateway
+#
+# Consomme le chart OFFICIEL Google "apigee-ingress-manager".
+# Le chart Google gère l'ApigeeIngressGateway + les composants réseau internes.
+#
+# Toujours conditionné par `ingressGateway.mode` dans le generator :
+#   - dedicated : le chart est rendu → gateway posée
+#   - shared    : le chart n'est PAS rendu → le tenant réutilise un gateway existant
+#
+# Le mode shared est géré par un generator selector dans les AppSets
+# (filtré par `ingressGateway.mode` == "dedicated" dans le template condition).
+# En pratique, les tenants "shared" ne matchent pas le selector ci-dessous,
+# donc ArgoCD ne génère PAS d'Application pour eux.
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apigee-tenant-ingress-appset
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+
+  generators:
+    - matrix:
+        generators:
+          - git:
+              repoURL: https://gitlab..com/<UID>/apigee-gitops.git
+              revision: HEAD
+              files:
+                - path: argo/generators/tenants/*.yaml
+          - list:
+              elements:
+                - cluster: cluster-A
+                # - cluster: cluster-B
+
+  template:
+    metadata:
+      name: 'apigee-ingress-{{.tenant}}-{{.cluster}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "28"
+    spec:
+      project: default
+      destination:
+        name: '{{.cluster}}'
+        namespace: apigee
+      sources:
+        # Chart Google apigee-ingress-manager
+        - repoURL: oci://icr.io/<UID>/helm-charts
+          chart: apigee-ingress-manager
+          targetRevision: 1.16.0
+          helm:
+            releaseName: 'ingress-{{.tenant}}'
+            ignoreMissingValueFiles: true
+            valueFiles:
+              - $values/values/platform/ingressmanager/values-common.yaml
+              - $values/values/tenants/{{.tenant}}/values-{{.tenant}}-ingress.yaml
+        # Values
+        - repoURL: https://gitlab..com/<UID>/apigee-gitops.git
+          targetRevision: HEAD
+          ref: values
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true

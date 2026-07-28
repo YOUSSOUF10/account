@@ -1,0 +1,41 @@
+# values/tenants/prod-test/values-prod-test-extras.yaml
+tenant:
+  type: standard
+
+vault:
+  mountPath: secret/admin/apigee/prod-test
+  gcpServiceAccounts:
+    synchronizer: sa-synchronizer.json
+    udca: sa-udca.json
+    mart: sa-mart.json
+    metrics: sa-metrics.json
+  tls:
+    internalCert: tls/internal
+    caBundle: ../ca/internal-ca
+
+ingressGateway:
+  mode: dedicated
+  tlsSecretName: apigee-tls-prod-test
+
+exposition:
+  ingressClass: traefik
+  hosts:
+    - host: api-test.mondomaine.com
+      tlsSecretRef: ingress-tls
+    - host: api-test-internal.mondomaine.com
+      tlsSecretRef: ingress-tls
+  targetServiceName: apigee-ingress-prod-test
+  serversTransport:
+    name: apigee-transport-prod-test
+    serverName: apigee-ingress-prod-test.apigee.svc
+    insecureSkipVerify: false
+    rootCAsSecret: apigee-ca-trust
+
+networkPolicies:
+  enabled: true
+  allowNamespaces:
+    - traefik
+
+pdb:
+  enabled: true
+  minAvailable: 2

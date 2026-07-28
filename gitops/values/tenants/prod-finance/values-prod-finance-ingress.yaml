@@ -1,0 +1,26 @@
+# values/tenants/prod-test/values-prod-test-ingress.yaml
+# ============================================================================
+# Surcharges du chart Google "apigee-ingress-manager" pour prod-test.
+# Déployé par l'AppSet 06 (wave 28).
+# ============================================================================
+
+namespace: apigee
+
+# Nom de la gateway — doit correspondre au `ingressGateways.name` dans virtualhost
+ingressGateway:
+  name: apigee-ingress-prod-test
+
+  replicaCountMin: 2
+  replicaCountMax: 4
+
+  svcType: ClusterIP
+
+  # Secret TLS (créé par ExternalSecret depuis Vault)
+  sslSecret: apigee-tls-prod-test
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      memory: 1Gi

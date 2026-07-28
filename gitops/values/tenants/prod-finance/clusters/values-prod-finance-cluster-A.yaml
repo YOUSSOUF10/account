@@ -1,0 +1,4 @@
+# Surcharges prod-test spécifiques au cluster-A
+runtime:
+  nodeSelector:
+    workload: apigee-runtime
