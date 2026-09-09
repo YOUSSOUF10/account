@@ -48,6 +48,19 @@ CMD ["./docker/entrypoint.sh"]
 
 
 
+## 2. Première Action de Passation : Structure Preprod / Prod
+
+Dans le cadre du transfert vers Run, la première action consiste en la création de deux folders GCP distincts :
+
+* **Folder `preprod`**
+* **Folder `prod`**
+
+Chaque folder doit intégrer les **groupes d'utilisateurs (user groups)** correspondants. Pour le moment, le périmètre est limité aux **utilisateurs de la Pologne** uniquement (extension à d'autres pays à prévoir ultérieurement, hors périmètre actuel).
+
+| Folder | Périmètre utilisateurs actuel | Statut |
+| :--- | :--- | :---: |
+| `preprod` | Users Pologne | À créer |
+| `prod` | Users Pologne | À créer |
 
 
 
