@@ -46,21 +46,16 @@ CMD ["./docker/entrypoint.sh"]
 
 
 
+To clarify the exact data residency scope and confirm the setup for :
 
+Data Residency vs. Advanced Data Residency: From a product standpoint, official documentation states that full Advanced Data Residency (ADR) is not supported for Apigee Hybrid because Google does not manage the Runtime plane (in-transit/in-use data on local infrastructure). However, for the Google-managed Control Plane, enabling CMEK encryption enforces an advanced data residency setup (Control Plane in EUROPE, Analytics in europe-central2 Warsaw).
 
-## 2. Première Action de Passation : Structure Preprod / Prod
+Assured Workloads: An Assured Workloads folder is not required, as this advanced Control Plane setup with CMEK was provisioned directly at the Apigee organization level.
 
-Dans le cadre du transfert vers Run, la première action consiste en la création de deux folders GCP distincts :
+Endpoint Recommendation (apigee.eu.rep.googleapis.com): Because the Control Plane operates under these advanced residency requirements, Apigee Support previously confirmed that using [https://apigee.eu.rep.googleapis.com](https://apigee.eu.rep.googleapis.com) is mandatory for administrative calls to ensure compliance and avoid authorization errors (403).
 
-* **Folder `preprod`**
-* **Folder `prod`**
+Please ensure your CI/CD pipelines and deployment tools target [https://apigee.eu.rep.googleapis.com](https://apigee.eu.rep.googleapis.com).
 
-Chaque folder doit intégrer les **groupes d'utilisateurs (user groups)** correspondants. Pour le moment, le périmètre est limité aux **utilisateurs de la Pologne** uniquement (extension à d'autres pays à prévoir ultérieurement, hors périmètre actuel).
-
-| Folder | Périmètre utilisateurs actuel | Statut |
-| :--- | :--- | :---: |
-| `preprod` | Users Pologne | À créer |
-| `prod` | Users Pologne | À créer |
 
 
 
