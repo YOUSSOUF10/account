@@ -43,10 +43,3 @@ EXPOSE 8080
 
 # Commande de démarrage
 CMD ["./docker/entrypoint.sh"]
-
-kubectl run test-egress -n apigee --rm -i --tty --image=fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-runtime:latest --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":1000,"runAsGroup":1000,"seccompProfile":{"type":"RuntimeDefault"}},"containers":[{"name":"test-egress","image":"fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-runtime:latest","command":["/bin/sh","-c","nc -zv apigee.eu.rep.googleapis.com 443 || curl -vI https://apigee.eu.rep.googleapis.com"],"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]}}}]}}'
-
-kubectl run test-egress -n apigee --rm -i --tty --image=$IMAGE --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":1000,"runAsGroup":1000,"seccompProfile":{"type":"RuntimeDefault"}},"containers":[{"name":"test-egress","image":"'$IMAGE'","command":["/bin/sh","-c","nc -zv apigee.eu.rep.googleapis.com 443"],"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]}}}]}}'
-
-
-IMAGE=$(kubectl get pods -n apigee -o jsonpath='{.items[0].spec.containers[0].image}' 2>/dev/null || echo "fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-runtime:latest")
