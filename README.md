@@ -44,3 +44,61 @@ EXPOSE 8080
 # Commande de démarrage
 CMD ["./docker/entrypoint.sh"]
 
+
+
+kubectl run test-all-apigee -n apigee --rm -i --tty \
+  --image=curlimages/curl \
+  --overrides='{
+    "spec": {
+      "securityContext": {
+        "runAsNonRoot": true,
+        "runAsUser": 1000,
+        "runAsGroup": 1000,
+        "seccompProfile": {
+          "type": "RuntimeDefault"
+        }
+      },
+      "containers": [{
+        "name": "test-all-apigee",
+        "image": "curlimages/curl",
+        "command": ["sh", "-c"],
+        "args": ["for url in apigee.eu.rep.googleapis.com europe-west9-pubsub.googleapis.com apigee.googleapis.com oauth2.googleapis.com iamcredentials.googleapis.com storage.googleapis.com pkg.dev; do echo \"=== Test vers $url:443 ===\"; curl -m 5 -svI https://$url > /dev/null 2>&1 && echo \"SUCCESS: Flux Ouvert\" || echo \"FAILED: Bloque par pare-feu\"; echo \"\"; done"],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": ["ALL"]
+          }
+        }
+      }]
+    }
+  }'
+
+
+
+  kubectl run test-egress -n apigee --rm -i --tty \
+  --image=curlimages/curl \
+  --overrides='{
+    "spec": {
+      "securityContext": {
+        "runAsNonRoot": true,
+        "runAsUser": 1000,
+        "runAsGroup": 1000,
+        "fsGroup": 1000,
+        "seccompProfile": {
+          "type": "RuntimeDefault"
+        }
+      },
+      "containers": [{
+        "name": "test-egress",
+        "image": "curlimages/curl",
+        "args": ["curl", "-vI", "https://apigee.eu.rep.googleapis.com"],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": ["ALL"]
+          },
+          "readOnlyRootFilesystem": false
+        }
+      }]
+    }
+  }'
