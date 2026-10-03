@@ -1,1 +1,47 @@
 
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  name: inject-ca-guardrail
+  namespace: apigee--hprd-dce13121
+spec:
+  validationFailureAction: audit
+  rules:
+  - name: inject-ca
+    match:
+      resources:
+        kinds:
+        - Pod
+    mutate:
+      patchStrategicMerge:
+        spec:
+          volumes:
+          - name: -ca
+            configMap:
+              name: -ca-bundle
+          containers:
+          - (name): "*"
+            volumeMounts:
+            - name: -ca
+              mountPath: /etc/ssl/certs
+              readOnly: true
+            env:
+            - name: SSL_CERT_FILE
+              value: /etc/ssl/certs/ca-certificates.crt
+
+
+
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - 01-ns-appset.yaml
+  - 01a-kyverno-ca-inject.yaml
+  - 02-apigee-operator-appset.yaml
+  - 03-apigee-org-appset.yaml
+  - 04-cassandra-app.yaml
+  - 05-tenant-secrets-appset.yaml
+  - 06-tenant-ingress-appset.yaml
+  - 07-tenant-env-appset.yaml
+  - 08-tenant-exposure-appset.yaml
