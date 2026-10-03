@@ -1,1 +1,29 @@
 
+        {{- if .Values.customCA }}
+        - name: SSL_CERT_FILE
+          value: /etc/ssl/certs/custom-ca.crt
+        {{- end }}
+
+
+
+
+        {{- if .Values.customCA }}
+        - name: custom-ca
+          mountPath: /etc/ssl/certs/custom-ca.crt
+          subPath: {{ .Values.customCA.key }}
+          readOnly: true
+        {{- end }}
+
+
+      {{- if .Values.customCA }}
+      - name: custom-ca
+        configMap:
+          name: {{ .Values.customCA.configMapName }}
+      {{- end }}
+
+
+
+
+customCA:
+  configMapName: bnpp-ca-bundle
+  key: ca-certificates.crt    # la clé dans ton ConfigMap
