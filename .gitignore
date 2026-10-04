@@ -25,5 +25,30 @@
 
 
 customCA:
-  configMapName: bnpp-ca-bundle
+  configMapName: -ca-bundle
   key: ca-certificates.crt    # la clé dans ton ConfigMap
+
+
+        {{- if .Values.customCA }}
+        - name: custom-ca
+          mountPath: {{ .Values.customCA.mountPath | default "/etc/ssl/certs/custom" }}
+          readOnly: true
+        {{- end }}
+
+      {{- if .Values.customCA }}
+      - name: custom-ca
+        configMap:
+          name: {{ .Values.customCA.configMapName }}
+          defaultMode: 420
+      {{- end }}
+
+
+
+# Custom CA for corporate proxy TLS interception
+customCA:
+  configMapName: -ca-bundle
+  mountPath: /etc/ssl/certs/custom
+
+guardrails:
+  envVars:
+    SSL_CERT_FILE: "/etc/ssl/certs/custom/ca-certificates.crt"
