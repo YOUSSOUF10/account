@@ -1,52 +1,126 @@
-
 oc run ca-check --rm -it --restart=Never \
   --image=private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-watcher:1.17.0 \
   --namespace=apigee-ap88257-hprd-dce13121 \
-  --command -- sh -c '
-    echo "=== OS ===" && cat /etc/os-release 2>/dev/null | head -5;
-    echo "=== /etc/ssl/certs/ ===" && ls -la /etc/ssl/certs/ 2>/dev/null | head -20;
-    echo "=== /etc/pki/tls/certs/ ===" && ls -la /etc/pki/tls/certs/ 2>/dev/null;
-    echo "=== SSL_CERT vars ===" && env | grep -i ssl;
-    echo "=== Go crypto check ===" && strings /apigee-watcher 2>/dev/null | grep -i "boring\|x509\|cert" | head -10
-  '
+  --overrides='{
+    "spec": {
+      "securityContext": {
+        "runAsNonRoot": true,
+        "seccompProfile": {"type": "RuntimeDefault"}
+      },
+      "containers": [{
+        "name": "ca-check",
+        "image": "private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-watcher:1.17.0",
+        "command": ["sh", "-c", "echo === OS === && cat /etc/os-release 2>/dev/null | head -5; echo === /etc/ssl/certs/ === && ls -la /etc/ssl/certs/ 2>/dev/null | head -20; echo === /etc/pki/tls/certs/ === && ls -la /etc/pki/tls/certs/ 2>/dev/null; echo === SSL_CERT vars === && env | grep -i ssl; echo === Go crypto check === && strings /apigee-watcher 2>/dev/null | grep -i \"boring\\|x509\\|cert\" | head -10"],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "runAsNonRoot": true,
+          "capabilities": {"drop": ["ALL"]}
+        }
+      }]
+    }
+  }'
 
 
 
 oc run ssl-check --rm -it --restart=Never \
   --image=alpine:latest \
   --namespace=apigee-ap88257-hprd-dce13121 \
-  --command -- sh -c '
-    apk add --no-cache openssl > /dev/null 2>&1;
-    echo "=== Cert chain from proxy ===" ;
-    echo | openssl s_client -connect 10.254.122.73:3131 \
-      -servername apigee.eu.rep.googleapis.com \
-      -proxy 10.254.122.73:3131 2>/dev/null | openssl x509 -noout -issuer -subject;
-    echo "=== Via CONNECT ===" ;
-    echo | openssl s_client -connect apigee.eu.rep.googleapis.com:443 \
-      -proxy 10.254.122.73:3131 2>/dev/null | openssl x509 -noout -issuer -subject
-  '
+  --overrides='{
+    "spec": {
+      "securityContext": {
+        "runAsNonRoot": true,
+        "runAsUser": 1000,
+        "seccompProfile": {"type": "RuntimeDefault"}
+      },
+      "containers": [{
+        "name": "ssl-check",
+        "image": "alpine:latest",
+        "command": ["sh", "-c", "apk add --no-cache openssl > /dev/null 2>&1; echo === Via CONNECT === ; echo | openssl s_client -connect apigee.eu.rep.googleapis.com:443 -proxy 10.254.122.73:3131 2>/dev/null | openssl x509 -noout -issuer -subject"],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "runAsNonRoot": true,
+          "capabilities": {"drop": ["ALL"]}
+        }
+      }]
+    }
+  }'
 
 
 
-oc get configmap npp-ca-bundle -n apigee-ap88257-hprd-dce13121 \
-  -o jsonpath='{.data.ca-certificates\.crt}' | openssl x509 -noout -issuer -subject
 
-
-
-# Extraire les CA système depuis l'image
+# 1. Extraire les CA système depuis l'image
 oc run extract-ca --rm -it --restart=Never \
   --image=private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-watcher:1.17.0 \
   --namespace=apigee-ap88257-hprd-dce13121 \
-  --command -- cat /etc/ssl/certs/ca-certificates.crt > /tmp/system-ca.crt
+  --overrides='{
+    "spec": {
+      "securityContext": {
+        "runAsNonRoot": true,
+        "seccompProfile": {"type": "RuntimeDefault"}
+      },
+      "containers": [{
+        "name": "extract-ca",
+        "image": "private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-watcher:1.17.0",
+        "command": ["cat", "/etc/ssl/certs/ca-certificates.crt"],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "runAsNonRoot": true,
+          "capabilities": {"drop": ["ALL"]}
+        }
+      }]
+    }
+  }' > /tmp/system-ca.crt
 
-# Récupérer le cert BNP
-oc get configmap npp-ca-bundle -n apigee-ap88257-hprd-dce13121 \
-  -o jsonpath='{.data.ca-certificates\.crt}' > /tmp/bnp-ca.crt
 
-# Combiner
-cat /tmp/system-ca.crt /tmp/bnp-ca.crt > /tmp/combined-ca.crt
+# 2. Récupérer le cert tnpp
+oc get configmap tnppp-ca-bundle \
+  -n apigee-ap88257-hprd-dce13121 \
+  -o jsonpath='{.data.ca-certificates\.crt}' > /tmp/tnpp-ca.crt
 
-# Créer la nouvelle ConfigMap
-oc create configmap npp-ca-bundle-combined \
+
+# 3. Combiner
+cat /tmp/system-ca.crt /tmp/tnpp-ca.crt > /tmp/combined-ca.crt
+
+
+# 4. Créer la nouvelle ConfigMap
+oc create configmap tnppp-ca-bundle-combined \
   --from-file=ca-certificates.crt=/tmp/combined-ca.crt \
   -n apigee-ap88257-hprd-dce13121
+
+
+
+oc run extract-ca --rm -it --restart=Never \
+  --namespace=apigee-ap88257-hprd-dce13121 \
+  --image=alpine:latest \
+  --overrides='{
+    "spec": {
+      "securityContext": {
+        "runAsNonRoot": true,
+        "runAsUser": 1000,
+        "seccompProfile": {"type": "RuntimeDefault"}
+      },
+      "initContainers": [{
+        "name": "copy-certs",
+        "image": "private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-watcher:1.17.0",
+        "command": ["cp", "/etc/ssl/certs/ca-certificates.crt", "/shared/system-ca.crt"],
+        "volumeMounts": [{"name": "shared", "mountPath": "/shared"}],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "runAsNonRoot": true,
+          "capabilities": {"drop": ["ALL"]}
+        }
+      }],
+      "containers": [{
+        "name": "extract-ca",
+        "image": "alpine:latest",
+        "command": ["cat", "/shared/system-ca.crt"],
+        "volumeMounts": [{"name": "shared", "mountPath": "/shared"}],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "runAsNonRoot": true,
+          "capabilities": {"drop": ["ALL"]}
+        }
+      }],
+      "volumes": [{"name": "shared", "emptyDir": {}}]
+    }
+  }' > /tmp/system-ca.crt
