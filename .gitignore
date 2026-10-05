@@ -1,1 +1,38 @@
 
+Hello,
+
+We are deploying Apigee Hybrid 1.17 on OpenShift (ROKS / IBM Cloud) in an enterprise environment where all outbound HTTPS traffic goes through a corporate forward proxy (HTTP scheme) that performs SSL/TLS interception.
+
+The guardrails pod and operator pods fail with:
+
+tls: failed to verify certificate: x509: certificate signed by unknown authority
+
+Our httpProxy configuration in values:
+
+yaml
+httpProxy:
+  host: "10.254.122.73"
+  port: "3131"
+  scheme: "http"
+
+The proxy re-signs all HTTPS responses with a corporate CA certificate. The pods do not trust this CA.
+
+Our question: What is the supported/recommended way to make the apigee-operator pods (guardrails hook, controller-manager) trust a custom CA certificate, without forking the Helm chart templates?
+
+Specifically:
+
+Is there a configuration property we may have missed (e.g. under httpProxy or elsewhere in the config property reference) to specify a custom CA bundle?
+Is there a supported way to use extraVolumes/extraVolumeMounts on the operator chart?
+Should we inject the CA at the node/cluster level instead (e.g. OpenShift MachineConfig to add the CA to the node trust store)?
+Is there another recommended approach for environments with SSL-intercepting proxies?
+
+We currently work around this by modifying the guardrails template to mount a ConfigMap with the corporate CA, but this is not sustainable across upgrades and we would like to use a supported method.
+
+Environment:
+
+Apigee Hybrid 1.17 (Helm-based install)
+OpenShift 4.x (ROKS, IBM Cloud)
+Deployment via ArgoCD (GitOps)
+Forward proxy: HTTP scheme, performs MITM/SSL interception
+
+Thank you.
