@@ -1,1 +1,104 @@
 
+oc run ca-test -n apigee-ap88257-hprd-dce13121 \
+  --image=fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-watcher \
+  --restart=Never \
+  --timeout=120s \
+  --overrides='{
+    "spec": {
+      "imagePullSecrets": [{"name": "image-pull-secret"}],
+      "securityContext": {
+        "runAsNonRoot": true,
+        "seccompProfile": {"type": "RuntimeDefault"}
+      },
+      "containers": [{
+        "name": "ca-test",
+        "image": "fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-watcher",
+        "command": ["sh", "-c", "cat /etc/ssl/certs/ca-certificates.crt 2>/dev/null | head -5; echo ---SEPARATOR---; ls /etc/ssl/certs/ 2>/dev/null; echo ---SEPARATOR---; wget -O /dev/null --timeout=10 https://apigee.eu.rep.googleapis.com 2>&1 || true; echo ---DONE---; sleep 30"],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "runAsNonRoot": true,
+          "capabilities": {"drop": ["ALL"]},
+          "seccompProfile": {"type": "RuntimeDefault"}
+        }
+      }]
+    }
+  }' \
+  -- sh -c "sleep 1"  
+
+
+
+
+oc run ca-test -n apigee-ap88257-hprd-dce13121 \
+  --image=fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-operators \
+  --restart=Never \
+  --timeout=120s \
+  --overrides='{
+    "spec": {
+      "imagePullSecrets": [{"name": "image-pull-secret"}],
+      "securityContext": {
+        "runAsNonRoot": true,
+        "seccompProfile": {"type": "RuntimeDefault"}
+      },
+      "containers": [{
+        "name": "ca-test",
+        "image": "fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-operators",
+        "command": ["sh", "-c", "cat /etc/ssl/certs/ca-certificates.crt 2>/dev/null | head -5; echo ---SEP---; ls /etc/ssl/certs/ 2>/dev/null; echo ---SEP---; wget -O /dev/null --timeout=10 https://apigee.eu.rep.googleapis.com 2>&1 || true; echo DONE; sleep 30"],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "runAsNonRoot": true,
+          "capabilities": {"drop": ["ALL"]},
+          "seccompProfile": {"type": "RuntimeDefault"}
+        }
+      }]
+    }
+  }' \
+  -- sh -c "sleep 1"
+
+
+
+
+
+
+
+
+
+oc run ca-test -n apigee-ap88257-hprd-dce13121 \
+  --image=fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-operators \
+  --restart=Never \
+  --overrides='{
+    "spec": {
+      "imagePullSecrets": [{"name": "image-pull-secret"}],
+      "securityContext": {
+        "runAsNonRoot": true,
+        "seccompProfile": {"type": "RuntimeDefault"}
+      },
+      "containers": [{
+        "name": "ca-test",
+        "image": "fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-operators",
+        "env": [
+          {"name": "http_proxy", "value": "http://"},
+          {"name": "https_proxy", "value": "http://"},
+          {"name": "HTTP_PROXY", "value": "http://"},
+          {"name": "HTTPS_PROXY", "value": "http://"},
+          {"name": "NO_PROXY", "value": ".cluster.local,.svc,localhost,127.0.0.1"}
+        ],
+        "command": ["sh", "-c", "echo === CAs systeme ===; ls /etc/ssl/certs/ 2>/dev/null | head -10; echo === Test proxy ===; wget --timeout=10 -O /dev/null https://apigee.eu.rep.googleapis.com 2>&1 || true; echo === DONE ===; sleep 60"],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "runAsNonRoot": true,
+          "capabilities": {"drop": ["ALL"]},
+          "seccompProfile": {"type": "RuntimeDefault"}
+        }
+      }]
+    }
+  }' \
+  -- sh -c "sleep 1"
+
+
+
+
+
+
+
+
+
