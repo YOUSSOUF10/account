@@ -1,1 +1,23 @@
 
+oc run curl-test --rm -it --restart=Never \
+  --image=alpine/curl:latest \
+  --namespace=apigee-ap88257-hprd-dce13121 \
+  --overrides='{
+    "spec": {
+      "securityContext": {
+        "runAsNonRoot": true,
+        "runAsUser": 1000,
+        "seccompProfile": {"type": "RuntimeDefault"}
+      },
+      "containers": [{
+        "name": "curl-test",
+        "image": "alpine/curl:latest",
+        "command": ["sh", "-c", "echo === Sans proxy === && curl -vvI https://apigee.eu.rep.googleapis.com 2>&1 | grep -i issuer; echo === Avec proxy === && https_proxy=http:// curl -vvI https://apigee.eu.rep.googleapis.com 2>&1 | grep -i issuer"],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "runAsNonRoot": true,
+          "capabilities": {"drop": ["ALL"]}
+        }
+      }]
+    }
+  }'
