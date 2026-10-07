@@ -1,1 +1,14 @@
 
+Bonjour,
+
+On déploie Apigee Hybrid sur ROKS via ArgoCD (appUID: ).
+
+Lors du sync de l'operator, on a une erreur RBAC sur les ressources SecurityContextConstraints au niveau cluster :
+
+securitycontextconstraints is forbidden: User "system:serviceaccount:argocd:..." cannot create resource "securitycontextconstraints" in API group "security.openshift.io" at the cluster scope
+
+Apigee a besoin de créer des SCC pour ses différents workloads . Ces SCC sont définies dans les templates Helm du chart officiel.
+
+Est-il possible d'ajouter les droits de création/gestion des SecurityContextConstraints au service account ArgoCD de notre namespace ?
+
+Merci
