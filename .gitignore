@@ -1,1 +1,22 @@
 
+Description :
+
+Le déploiement d’Apigee Hybrid 1.17 via ArgoCD sur le cluster ROKS () est bloqué par plusieurs problèmes liés à la plateforme :
+
+1. Security Context Constraints (SCC)
+Le chart Apigee génère 3 SCCs nécessaires au fonctionnement des composants (operator, Cassandra, logger). Le SA ArgoCD n’a pas les droits pour les créer. Contournement temporaire : application manuelle via oc apply.
+
+2. Injection du CA proxy (certificat )
+L’injection du certificat CA corporate dans les pods Apigee nécessite un forkage des charts Helm officiels Google, car les templates ne supportent pas nativement le montage de CA bundles custom.
+
+3. Permissions RBAC du ServiceAccount ArgoCD
+Le SA argocd-client-configuration n’a pas les droits suffisants pour gérer les ressources Kubernetes standard (StatefulSet, Deployment, etc.) sur le cluster cible. Erreur : cannot list resource "statefulsets" in API group "apps" at the cluster scope.
+
+Impact :
+Déploiement Apigee Hybrid bloqué. Les points 1 et 2 nécessitent des actions immédiates, le point 3 est en cours de résolution par l’équipe plateforme.
+
+Environnement :
+
+Cluster : ops-ap88257-test-cfdeb9ed
+Namespace : apigee-ap88257-hprd-dce13121
+SA ArgoCD : system:serviceaccount:argocd-test-ap88257-fe1d21ea-client:argocd-client-configuration
