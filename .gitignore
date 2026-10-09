@@ -1,1 +1,18 @@
 
+echo "=== Cassandra (datastore) ==="
+echo "default:   $(openssl rand -base64 18)"
+echo "admin:     $(openssl rand -base64 18)"
+echo "ddl:       $(openssl rand -base64 18)"
+echo "dml:       $(openssl rand -base64 18)"
+echo "jmx:       $(openssl rand -base64 18)"
+echo "jolokia:   $(openssl rand -base64 18)"
+
+echo ""
+echo "=== Redis ==="
+echo "admin:     $(openssl rand -base64 18)"
+
+echo ""
+echo "=== Org / Env (encryption keys) ==="
+echo "kmsEncryptionKey:  $(openssl rand -base64 32)"
+echo "kvmEncryptionKey:  $(openssl rand -base64 32)"
+echo "cacheEncryptionKey: $(openssl rand -base64 32)"
