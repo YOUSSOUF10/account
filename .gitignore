@@ -1,1 +1,197 @@
 
+# =============================================================================
+# values-dc1.yaml — Apigee Datastore
+# Configuration specifique au cluster DC1 (ops-ap88257-test)
+# =============================================================================
+
+# Cert-Manager CA Issuer — DOIT etre true (coherence avec l'operator)
+ao:
+  certManagerCAIssuerEnabled: true
+
+# -----------------------------------------------------------------------------
+# Proxy HTTP (HAProxy )
+# Le chart injecte dans le CRD ApigeeDatastore + env vars guardrail
+# -----------------------------------------------------------------------------
+httpProxy:
+  scheme: "http"
+  host: "REMPLACER_PAR_TON_HAPROXY"
+  port: 8080
+
+# -----------------------------------------------------------------------------
+# Image Pull — registre prive IBM Container Registry
+# -----------------------------------------------------------------------------
+# Option 1 : hub global (applique a toutes les images du chart)
+hub: "private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid"
+
+# Secret pour pull depuis le registre prive
+imagePullSecrets:
+  - name: "apigee-pull-secret"
+
+# -----------------------------------------------------------------------------
+# Cassandra
+# -----------------------------------------------------------------------------
+cassandra:
+  # --- Images (si hub est defini, url est ignore, seuls tag et pullPolicy comptent) ---
+  image:
+    url: "private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-hybrid-cassandra"
+    tag: "1.17.0"
+    pullPolicy: Always
+  auth:
+    image:
+      url: "private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-hybrid-cassandra-client"
+      tag: "1.17.0"
+      pullPolicy: Always
+
+    # --- Credentials Cassandra — CHANGER LES PASSWORDS ---
+    default:
+      password: "REMPLACER_MOT_DE_PASSE_DEFAULT"
+    admin:
+      username: "admin_user"
+      password: "REMPLACER_MOT_DE_PASSE_ADMIN"
+    ddl:
+      username: "ddl_user"
+      password: "REMPLACER_MOT_DE_PASSE_DDL"
+    dml:
+      username: "dml_user"
+      password: "REMPLACER_MOT_DE_PASSE_DML"
+    jmx:
+      username: "jmxuser"
+      password: "REMPLACER_MOT_DE_PASSE_JMX"
+    jolokia:
+      username: "jolokiauser"
+      password: "REMPLACER_MOT_DE_PASSE_JOLOKIA"
+
+  # --- Reseau ---
+  hostNetwork: false
+
+  # --- Resources (recommandation Apigee pour production) ---
+  resources:
+    requests:
+      cpu: 2
+      memory: 6Gi
+  maxHeapSize: 1024M
+  heapNewSize: 200M
+
+  # --- Stockage ---
+  storage:
+    storageClass: "ibmc-vpc-block-10iops-tier"
+    storageSize: 100Gi
+
+  # --- Backup CSI (VolumeSnapshots) ---
+  backup:
+    enabled: true
+    cloudProvider: "CSI"
+    schedule: "0 2 * * *"
+    image:
+      url: "private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-hybrid-cassandra-client"
+      tag: "1.17.0"
+      pullPolicy: Always
+
+  # --- Restore (desactive par defaut) ---
+  restore:
+    enabled: false
+    image:
+      url: "private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-hybrid-cassandra-client"
+      tag: "1.17.0"
+      pullPolicy: Always
+
+# -----------------------------------------------------------------------------
+# Guardrails (pod de validation pre-install/pre-upgrade)
+# -----------------------------------------------------------------------------
+guardrails:
+  image:
+    url: "private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-watcher"
+    tag: "1.17.0"
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 500m
+      memory: 64Mi
+
+
+
+
+
+
+
+# =============================================================================
+# values-topology.yaml — Apigee Datastore
+# Configuration topologie datacenter / replication
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Phase 1 : Mono-DC
+# -----------------------------------------------------------------------------
+cassandra:
+  datacenter: "dc-1"
+  rack: "ra-1"
+  replicaCount: 3
+  clusterName: "apigeecluster"
+
+# -----------------------------------------------------------------------------
+# Phase 2 : Multi-DC (decommenter quand necessaire)
+# -----------------------------------------------------------------------------
+# Pour le DC secondaire, creer un values-dc2.yaml avec :
+#   cassandra:
+#     datacenter: "dc-2"
+#     rack: "ra-1"
+#     replicaCount: 3
+#     multiRegionSeedHost: "<IP_DU_SEED_DC1>"
+
+
+
+
+
+
+
+
+# =============================================================================
+# values-common.yaml — Apigee Datastore
+# Valeurs communes a tous les clusters / datacenters
+# =============================================================================
+
+# Endpoint Apigee Control Plane (EU data residency)
+contractProvider: https://apigee.eu.rep.googleapis.com
+
+# Namespace Apigee
+namespace: apigee-ap88257-hprd-dce13121
+
+# IDs systeme Apigee (ne pas changer)
+apigeeGroupID: 998
+apigeeUserID: 999
+
+# GCP project
+gcp:
+  region: "europe-west9"
+  projectID: "apigee-ocp-tech"
+  workloadIdentity:
+    enabled: false
+  federatedWorkloadIdentity:
+    enabled: false
+
+# Node Selector — structure key/value attendue par le chart
+# Adapte les values selon les labels de tes worker pools ROKS
+nodeSelector:
+  requiredForScheduling: true
+  apigeeRuntime:
+    key: "ibm-cloud.kubernetes.io/worker-pool-name"
+    value: "apigee-runtime"
+  apigeeData:
+    key: "ibm-cloud.kubernetes.io/worker-pool-name"
+    value: "apigee-data"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
