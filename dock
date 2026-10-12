@@ -1,4 +1,3 @@
-
 {{- template "helmVersionCheck" . }}
 {{- template "gcpProjectIDCheck" . }}
 {{- $datastoreName := "default" -}}
@@ -263,8 +262,9 @@ spec:
           value: "{{ .Values.connectAgent.logLevel }}"
         - name: LOG_VERBOSITY_LEVEL
           value: "{{ .Values.connectAgent.logVerbosity }}"
-        {{- if include "fwi.enabled" . }}
+        {{- if or (include "fwi.enabled" .) ((.Values.customCA).enabled) }}
         volumeMounts:
+        {{- if include "fwi.enabled" . }}
         {{- if eq .Values.gcp.federatedWorkloadIdentity.type "kubernetes" }}
         - name: fwi-token
           mountPath: {{ include "fwi.tokenPath" . }}
@@ -275,8 +275,16 @@ spec:
           readOnly: true
         {{- end }}
         {{- end }}
-      {{- if include "fwi.enabled" . }}
+        {{- if (.Values.customCA).enabled }}
+        - name: custom-ca
+          mountPath: /etc/ssl/certs/ca-certificates.crt
+          subPath: {{ .Values.customCA.configMapKey }}
+          readOnly: true
+        {{- end }}
+        {{- end }}
+      {{- if or (include "fwi.enabled" .) ((.Values.customCA).enabled) }}
       volumes:
+      {{- if include "fwi.enabled" . }}
       {{- if eq .Values.gcp.federatedWorkloadIdentity.type "kubernetes" }}
       - name: fwi-token
         projected:
@@ -294,6 +302,13 @@ spec:
       - name: {{ $vol.name | replace "APIGEE_COMPONENT" "apigee-mart" }}
       {{- omit $vol "name" | toYaml | replace "APIGEE_COMPONENT" "apigee-mart" | nindent 8 }}
       {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- if (.Values.customCA).enabled }}
+      - name: custom-ca
+        configMap:
+          name: {{ .Values.customCA.configMapName }}
+          defaultMode: 420
       {{- end }}
       {{- end }}
     cassandraSchemaValidation:
@@ -408,8 +423,9 @@ spec:
           value: !!str {{ .Values.watcher.featureGates.maxRoutesPerShard }}
         - name: LOG_LEVEL
           value: {{ .Values.watcher.properties.watcherLogLevel }}
-        {{- if include "fwi.enabled" . }}
+        {{- if or (include "fwi.enabled" .) ((.Values.customCA).enabled) }}
         volumeMounts:
+        {{- if include "fwi.enabled" . }}
         {{- if eq .Values.gcp.federatedWorkloadIdentity.type "kubernetes" }}
         - name: fwi-token
           mountPath: {{ include "fwi.tokenPath" . }}
@@ -420,8 +436,16 @@ spec:
           readOnly: true
         {{- end }}
         {{- end }}
-      {{- if include "fwi.enabled" . }}
+        {{- if (.Values.customCA).enabled }}
+        - name: custom-ca
+          mountPath: /etc/ssl/certs/ca-certificates.crt
+          subPath: {{ .Values.customCA.configMapKey }}
+          readOnly: true
+        {{- end }}
+        {{- end }}
+      {{- if or (include "fwi.enabled" .) ((.Values.customCA).enabled) }}
       volumes:
+      {{- if include "fwi.enabled" . }}
       {{- if eq .Values.gcp.federatedWorkloadIdentity.type "kubernetes" }}
       - name: fwi-token
         projected:
@@ -439,6 +463,13 @@ spec:
       - name: {{ $vol.name | replace "APIGEE_COMPONENT" "apigee-watcher" }}
       {{- omit $vol "name" | toYaml | replace "APIGEE_COMPONENT" "apigee-watcher" | nindent 8 }}
       {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- if (.Values.customCA).enabled }}
+      - name: custom-ca
+        configMap:
+          name: {{ .Values.customCA.configMapName }}
+          defaultMode: 420
       {{- end }}
       {{- end }}
       properties:
@@ -565,8 +596,9 @@ spec:
               key: kvmEncryptionKey
               {{- end }}
         {{- end }}
-        {{- if include "fwi.enabled" . }}
+        {{- if or (include "fwi.enabled" .) ((.Values.customCA).enabled) }}
         volumeMounts:
+        {{- if include "fwi.enabled" . }}
         {{- if eq .Values.gcp.federatedWorkloadIdentity.type "kubernetes" }}
         - name: fwi-token
           mountPath: {{ include "fwi.tokenPath" . }}
@@ -577,8 +609,16 @@ spec:
           readOnly: true
         {{- end }}
         {{- end }}
-      {{- if include "fwi.enabled" . }}
+        {{- if (.Values.customCA).enabled }}
+        - name: custom-ca
+          mountPath: /etc/ssl/certs/ca-certificates.crt
+          subPath: {{ .Values.customCA.configMapKey }}
+          readOnly: true
+        {{- end }}
+        {{- end }}
+      {{- if or (include "fwi.enabled" .) ((.Values.customCA).enabled) }}
       volumes:
+      {{- if include "fwi.enabled" . }}
       {{- if eq .Values.gcp.federatedWorkloadIdentity.type "kubernetes" }}
       - name: fwi-token
         projected:
@@ -596,6 +636,13 @@ spec:
       - name: {{ $vol.name | replace "APIGEE_COMPONENT" "apigee-mart" }}
       {{- omit $vol "name" | toYaml | replace "APIGEE_COMPONENT" "apigee-mart" | nindent 8 }}
       {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- if (.Values.customCA).enabled }}
+      - name: custom-ca
+        configMap:
+          name: {{ .Values.customCA.configMapName }}
+          defaultMode: 420
       {{- end }}
       {{- end }}
     mintTaskScheduler:
@@ -647,8 +694,9 @@ spec:
       configOverride:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if include "fwi.enabled" . }}
+      {{- if or (include "fwi.enabled" .) ((.Values.customCA).enabled) }}
       volumes:
+      {{- if include "fwi.enabled" . }}
       {{- if eq .Values.gcp.federatedWorkloadIdentity.type "kubernetes" }}
       - name: fwi-token
         projected:
@@ -668,6 +716,13 @@ spec:
       {{- end }}
       {{- end }}
       {{- end }}
+      {{- if (.Values.customCA).enabled }}
+      - name: custom-ca
+        configMap:
+          name: {{ .Values.customCA.configMapName }}
+          defaultMode: 420
+      {{- end }}
+      {{- end }}
       initContainers:
       - name: {{$schemaReadinessName}}
         image: {{ include "container.image" (dict "hub" .Values.hub "o" .Values.mart "n" "apigee-mart-server") }}
@@ -684,8 +739,9 @@ spec:
         resources:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- if include "fwi.enabled" . }}
+        {{- if or (include "fwi.enabled" .) ((.Values.customCA).enabled) }}
         volumeMounts:
+        {{- if include "fwi.enabled" . }}
         {{- if eq .Values.gcp.federatedWorkloadIdentity.type "kubernetes" }}
         - name: fwi-token
           mountPath: {{ include "fwi.tokenPath" . }}
@@ -693,6 +749,13 @@ spec:
         {{- else if eq .Values.gcp.federatedWorkloadIdentity.type "sidecar" }}
         - name: shared-mount
           mountPath: /var/run/service-account
+          readOnly: true
+        {{- end }}
+        {{- end }}
+        {{- if (.Values.customCA).enabled }}
+        - name: custom-ca
+          mountPath: /etc/ssl/certs/ca-certificates.crt
+          subPath: {{ .Values.customCA.configMapKey }}
           readOnly: true
         {{- end }}
         {{- end }}
@@ -828,7 +891,7 @@ spec:
         resources:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- if include "fwi.enabled" . }}
+        {{- if or (include "fwi.enabled" .) ((.Values.customCA).enabled) }}
         volumeMounts:
         {{- if eq .Values.gcp.federatedWorkloadIdentity.type "kubernetes" }}
         - name: fwi-token
@@ -837,6 +900,12 @@ spec:
         {{- else if eq .Values.gcp.federatedWorkloadIdentity.type "sidecar" }}
         - name: shared-mount
           mountPath: /var/run/service-account
+          readOnly: true
+        {{- end }}
+        {{- if (.Values.customCA).enabled }}
+        - name: custom-ca
+          mountPath: /etc/ssl/certs/ca-certificates.crt
+          subPath: {{ .Values.customCA.configMapKey }}
           readOnly: true
         {{- end }}
         {{- end }}
@@ -849,7 +918,7 @@ spec:
         resources:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- if include "fwi.enabled" . }}
+        {{- if or (include "fwi.enabled" .) ((.Values.customCA).enabled) }}
         volumeMounts:
         {{- if eq .Values.gcp.federatedWorkloadIdentity.type "kubernetes" }}
         - name: fwi-token
@@ -858,6 +927,12 @@ spec:
         {{- else if eq .Values.gcp.federatedWorkloadIdentity.type "sidecar" }}
         - name: shared-mount
           mountPath: /var/run/service-account
+          readOnly: true
+        {{- end }}
+        {{- if (.Values.customCA).enabled }}
+        - name: custom-ca
+          mountPath: /etc/ssl/certs/ca-certificates.crt
+          subPath: {{ .Values.customCA.configMapKey }}
           readOnly: true
         {{- end }}
         {{- end }}
