@@ -1,1 +1,46 @@
 
+kubectl run -n apigee-ap88257-hprd-dce13121 debug-sync --rm -it \
+  --image=private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-mart-server:1.17.0 \
+  --overrides='{
+    "spec": {
+      "imagePullSecrets": [{"name": "image-pull-secret"}],
+      "volumes": [{
+        "name": "custom-ca",
+        "configMap": {"name": "-ca-bundle-full"}
+      }],
+      "containers": [{
+        "name": "debug-sync",
+        "image": "private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-mart-server:1.17.0",
+        "command": ["sh"],
+        "stdin": true,
+        "tty": true,
+        "volumeMounts": [{
+          "name": "custom-ca",
+          "mountPath": "/etc/ssl/certs/ca-certificates.crt",
+          "subPath": "ca-certificates.crt",
+          "readOnly": true
+        }]
+      }]
+    }
+  }' \
+  --restart=Never -- sh
+
+
+
+
+
+
+# 1. Quel truststore Java existe ?
+find / -name "cacerts" 2>/dev/null
+
+# 2. Lister les CAs dans le truststore Java
+keytool -list -keystore /etc/ssl/certs/java/cacerts -storepass changeit 2>/dev/null | tail -20
+
+# 3. Y a-t-il la CA  dedans ?
+keytool -list -keystore /etc/ssl/certs/java/cacerts -storepass changeit 2>/dev/null | grep -i 
+
+# 4. Combien de certs dans le PEM monté ?
+grep -c "BEGIN CERTIFICATE" /etc/ssl/certs/ca-certificates.crt
+
+# 5. Le script d'entrypoint importe-t-il le PEM dans le JKS ?
+cat /entrypoint.sh 2>/dev/null || cat /opt/apigee/run.sh 2>/dev/null
