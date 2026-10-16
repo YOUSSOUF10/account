@@ -1,1 +1,12 @@
 
+cat <<'EOF' > /tmp/overrides.json
+{
+  "spec": {
+    "imagePullSecrets": [{"name": "image-pull-secret"}],
+    "securityContext": {"runAsNonRoot": true, "runAsUser": 1000, "runAsGroup": 1000, "seccompProfile": {"type": "RuntimeDefault"}},
+    "containers": [{"name": "test-envoy", "image": "private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-runtime:1.16.1", "command": ["/bin/sh", "-c", "curl -kv -H 'User-Agent: GoogleHC' --resolve 'apigee-ap88257-hprd-dce13121.data.cloud.net.intra:443:198.18.2.250' https://apigee-ap88257-hprd-dce13121.data.cloud.net.intra/healthz/ingress"], "securityContext": {"allowPrivilegeEscalation": false, "capabilities": {"drop": ["ALL"]}}}]
+  }
+}
+EOF
+
+kubectl run test-envoy -n apigee-ap88257-hprd-dce13121 --rm -i --tty --image=private.fr2.icr.io/ap88257-hprd/apigee-release/hybrid/apigee-runtime:1.16.1 --overrides="$(cat /tmp/overrides.json)" --restart=Never
