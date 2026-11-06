@@ -1,1 +1,38 @@
+Bonjour,
 
+Dans le cadre du déploiement d'**Apigee Hybrid 1.17.3**, plusieurs vulnérabilités de sévérité **HIGH et CRITICAL** ont été identifiées par les scans Trivy intégrés aux pipelines SaaS Enabler, entraînant le blocage de certains jobs GitLab.
+
+Ces vulnérabilités concernent les dépendances embarquées dans plusieurs composants Apigee Hybrid fournis par Google.
+
+Voici la synthèse des vulnérabilités identifiées :
+
+| Composant Apigee Hybrid | CVE | Sévérité |
+|---|---|---|
+| apigee-hybrid-cassandra | CVE-2026-68497 | HIGH |
+| apigee-hybrid-cassandra-client | CVE-2026-116587 | HIGH |
+| apigee-hybrid-cassandra-client | CVE-2026-78669 | HIGH |
+| apigee-mint-task-scheduler | CVE-2026-102554 | HIGH |
+| prometheus-adapter | CVE-2026-78669 | HIGH |
+| apigee-fluent-bit | CVE-2026-111497 | **CRITICAL** |
+| apigee-runtime | CVE-2026-102554 | HIGH |
+
+La CVE-2026-102554 est également présente dans plusieurs bibliothèques Guava embarquées dans le composant `apigee-mint-task-scheduler`.
+
+Les versions corrigées sont identifiées par Trivy, mais ne sont pas encore intégrées aux images analysées.
+
+**Pour le MVP 0**, certaines vulnérabilités ont été temporairement exclues via `.trivyignore` afin de permettre la poursuite des déploiements.
+
+Pour les environnements **DEV, préproduction et production**, nous souhaiterions clarifier les points suivants :
+
+- Peut-on solliciter **Google pour la correction de ces vulnérabilités dans les images officielles Apigee Hybrid**, et obtenir une version corrective ou un calendrier de remédiation ?
+- Dans l'attente des corrections Google, quel processus devons-nous suivre : exclusion temporaire des CVE, acceptation formelle du risque ou autre procédure de validation sécurité ?
+- Quelles validations sont nécessaires pour autoriser la poursuite des déploiements sur les différents environnements ?
+
+Les éléments d'analyse sont disponibles via les liens suivants :
+
+- **Jobs GitLab :** [Liens des jobs]
+- **Dashboard de sécurité / observabilité :** [Lien du dashboard]
+
+Merci d'avance pour votre retour sur la démarche à suivre et la possibilité d'engager une demande de remédiation auprès de Google.
+
+Cordialement,
