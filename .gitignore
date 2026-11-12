@@ -1,15 +1,1 @@
-# remplace le for_each fixe à 2 clés : seules les clés non nulles reçoivent un droit
-locals {
-  apigee_keys = { for k, v in {
-    runtime_db    = var.runtime_db_key_id
-    consumer_data = var.consumer_data_key_id
-    control_plane = var.control_plane_key_id
-  } : k => v if v != null }
-}
 
-resource "google_kms_crypto_key_iam_member" "apigee" {
-  for_each      = local.apigee_keys
-  crypto_key_id = each.value
-  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = module.project_services.service_agent_member
-}
