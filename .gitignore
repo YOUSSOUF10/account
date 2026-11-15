@@ -36,14 +36,29 @@ resource "google_kms_crypto_key_iam_member" "apihub" {
 }
 
 ############################################
-# 3. Instance API hub (CMEK)
+# 3. Host project registration (optionnel)
 ############################################
-# Host project registration : créé automatiquement par Google avec l'org Apigee
-# (erreur 409 si géré ici) -> volontairement hors Terraform.
-#
+# Créé automatiquement par Google avec l'org Apigee -> 409 si Terraform le crée.
+# Mettre manage_host_project_registration = true seulement s'il n'existe plus
+# (ex : supprimé par le déprovisionnement d'API hub).
+
+resource "google_apihub_host_project_registration" "this" {
+  count = var.manage_host_project_registration ? 1 : 0
+
+  project                      = var.host_project_id
+  location                     = var.location
+  host_project_registration_id = var.host_project_id
+  gcp_project                  = "projects/${var.host_project_id}"
+
+  depends_on = [module.project_services]
+}
+
+############################################
+# 4. Instance API hub (CMEK)
+############################################
 # /!\ La création de l'org Apigee génère une instance API hub par défaut en GMEK.
-# Elle doit être déprovisionnée AVANT l'apply de ce bloc (sinon 409),
-# cf. https://docs.cloud.google.com/apigee/docs/apihub/deprovision
+# Elle doit être déprovisionnée AVANT l'apply de ce bloc (sinon 409).
+# https://docs.cloud.google.com/apigee/docs/apihub/deprovision
 #
 # ATTENTION : clé indisponible > 7 jours = données supprimées définitivement.
 
@@ -63,6 +78,7 @@ resource "google_apihub_api_hub_instance" "this" {
   depends_on = [
     google_project_iam_member.apihub_sa_roles,
     google_kms_crypto_key_iam_member.apihub,
+    google_apihub_host_project_registration.this,
   ]
 
   lifecycle {
