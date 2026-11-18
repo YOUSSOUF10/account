@@ -1,87 +1,49 @@
-############################################
-# 1. APIs + service agent API hub (module)
-############################################
+Objet : API hub CMEK – récap du test hprd et demande de séquence de provisioning
 
-module "project_services" {
-  source = "../modules/project-services"
+Bonjour Christophe,
 
-  project_id = var.host_project_id
-  services = [
-    "cloudresourcemanager.googleapis.com",
-    "iam.googleapis.com",
-    "apihub.googleapis.com",
-  ]
-  service_agent_for = "apihub.googleapis.com"
-}
+Je te fais un retour sur le déroulé de notre provisioning d’API hub en hors prod : les étapes suivies, le résultat obtenu et nos questions pour la suite.
 
-resource "google_project_iam_member" "apihub_sa_roles" {
-  for_each = toset([
-    "roles/apihub.admin",
-    "roles/apihub.runtimeProjectServiceAgent",
-  ])
+Contexte
 
-  project = var.host_project_id
-  role    = each.key
-  member  = module.project_services.service_agent_member
-}
+Projet : prj-ocp-apim-hprd-apihub-y7h (235010008622)
+Objectif : une org Apigee X sans runtime, utilisée uniquement pour API hub, avec une instance API hub chiffrée en CMEK (clé sur notre HSM single-tenant)
 
-############################################
-# 2. Accès du service agent API hub à sa clé (projet KMS)
-############################################
+Ce que nous avons fait (15/11)
 
-resource "google_kms_crypto_key_iam_member" "apihub" {
-  crypto_key_id = var.cmek_key_id
-  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = module.project_services.service_agent_member
-}
+Création de l’org Apigee X via Terraform : runtime CLOUD, billing PAYG, data residency fr / europe-west9, sans VPC peering, CMEK runtime DB, aucune instance runtime. L’org est passée en ACTIVE.
+À la création de l’org, une instance API hub a été générée automatiquement (« Auto-generated when creating Apigee organization »), en GMEK.
+Conformément à la consigne de la documentation (« deprovision the Apigee API hub instance provided by default and recreate it to support CMEK »), nous avons déprovisionné cette instance depuis la console.
 
-############################################
-# 3. Host project registration (optionnel)
-############################################
-# Créé automatiquement par Google avec l'org Apigee -> 409 si Terraform le crée.
-# Mettre manage_host_project_registration = true seulement s'il n'existe plus
-# (ex : supprimé par le déprovisionnement d'API hub).
+Résultat
 
-resource "google_apihub_host_project_registration" "this" {
-  count = var.manage_host_project_registration ? 1 : 0
+L’org Apigee X a été supprimée en même temps que l’instance API hub, ce qui correspond à la page Deprovision (« Any associated Apigee organizations (with no Apigee instances) are also deleted »).
+Le host project registration a également été supprimé.
+Nous devons maintenant attendre 7 jours avant de pouvoir reprovisionner API hub.
 
-  project                      = var.host_project_id
-  location                     = var.location
-  host_project_registration_id = var.host_project_id
-  gcp_project                  = "projects/${var.host_project_id}"
+Les deux consignes de la documentation semblent incompatibles pour une org sans runtime : passer en CMEK impose de déprovisionner l’instance par défaut, mais ce déprovisionnement supprime l’org.
 
-  depends_on = [module.project_services]
-}
+Nos questions
 
-############################################
-# 4. Instance API hub (CMEK)
-############################################
-# /!\ La création de l'org Apigee génère une instance API hub par défaut en GMEK.
-# Elle doit être déprovisionnée AVANT l'apply de ce bloc (sinon 409).
-# https://docs.cloud.google.com/apigee/docs/apihub/deprovision
-#
-# ATTENTION : clé indisponible > 7 jours = données supprimées définitivement.
+Quelle séquence supportée permet d’obtenir, dans un même projet, une org Apigee X sans runtime (fr, CMEK runtime DB) et une instance API hub en CMEK ?
+Est-il possible de créer l’org Apigee X sans provisioning automatique d’API hub en GMEK ?
+Si nous provisionnons d’abord API hub en CMEK, quelle configuration aura l’org Apigee créée automatiquement (juridiction, clé runtime DB, billing) ? Pourra-t-elle respecter la data residency fr ?
+Le délai de 7 jours peut-il être levé de ton côté pour le projet hprd ?
 
-resource "google_apihub_api_hub_instance" "this" {
-  project             = var.host_project_id
-  location            = var.location
-  api_hub_instance_id = var.api_hub_instance_id
-  description         = var.description
+Nous attendons ton retour avant de rejouer le hprd et de lancer la prod (prj-ocp-apim-prd-apihub-x1d), pour ne pas reproduire le même scénario.
 
-  config {
-    encryption_type = "CMEK"
-    cmek_key_name   = var.cmek_key_id
-    disable_search  = var.disable_search
-    vertex_location = var.disable_search ? null : var.vertex_location
-  }
+Merci d’avance,
+Youssouf ZIANE
 
-  depends_on = [
-    google_project_iam_member.apihub_sa_roles,
-    google_kms_crypto_key_iam_member.apihub,
-    google_apihub_host_project_registration.this,
-  ]
 
-  lifecycle {
-    prevent_destroy = true
-  }
-}
+Hello l’équipe 👋
+
+Petit point sur API hub (hprd) :
+
+L’org Apigee X a bien été provisionnée (fr / europe-west9, CMEK HSM, sans runtime). Google a alors créé automatiquement une instance API hub, mais en GMEK.
+Pour passer en CMEK, j’ai suivi la consigne de la doc (déprovisionner l’instance par défaut). Résultat : l’org Apigee a été supprimée avec, ce qui est un comportement documenté pour une org sans runtime.
+Les clés KMS, les APIs et l’IAM sont conservés. Il y a un délai de 7 jours avant de pouvoir reprovisionner.
+
+J’ai envoyé un récap à Google pour obtenir la bonne séquence de provisioning (Apigee X + API hub en CMEK). On ne touche à rien en prd tant qu’on n’a pas leur retour.
+
+Je vous tiens au courant 👍
