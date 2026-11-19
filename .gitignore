@@ -1,1 +1,21 @@
+Les templates backup-cert.yaml et restore-cert.yaml du chart utilisent en dur kind: ClusterIssuer pour les certificats Cassandra de backup et restore. Or, dans notre environnement, nous n’avons pas accès aux ressources cluster-scoped — nous utilisons cert-manager en mode namespace-scoped avec le paramètre certManagerCAIssuerEnabled: true, qui crée un Issuer local dans notre namespace au lieu d’un ClusterIssuer.
 
+Le problème, c’est que d’autres templates du même chart (notamment guardrails-ca.yaml) gèrent déjà correctement cette configuration avec un bloc conditionnel qui bascule entre Issuer et ClusterIssuer selon le paramètre. Les templates de backup et restore n’ont pas cette logique.
+
+Nous avons appliqué un fix local sur les deux fichiers pour débloquer l’upgrade, mais ce correctif devrait être intégré nativement dans le chart.
+
+Environnement : Apigee Hybrid 1.17.3, OpenShift (ROKS), cert-manager en mode namespace-scoped (pas d’accès aux ressources cluster-scoped).
+
+Et la version anglaise pour le case Google :
+
+Subject: Apigee Hybrid 1.17.3 — Datastore backup/restore certificates incompatible with namespace-scoped cert-manager
+
+Description:
+
+We are running Apigee Hybrid 1.17.3 on OpenShift (ROKS) in a restricted environment where we do not have access to cluster-scoped resources. We use cert-manager in namespace-scoped mode (certManagerCAIssuerEnabled: true), which creates the CA Issuer within our application namespace instead of a cluster-wide ClusterIssuer.
+
+After upgrading to 1.17.3, the Cassandra backup and restore certificates fail because backup-cert.yaml and restore-cert.yaml hardcode kind: ClusterIssuer, regardless of our namespace-scoped configuration. Other certificate templates in the same chart (e.g. guardrails-ca.yaml) correctly adapt to our setup using a conditional block — the backup and restore templates do not.
+
+We applied a local fix to unblock the upgrade, but this should be handled natively in the chart.
+
+Environment: Apigee Hybrid 1.17.3, OpenShift (ROKS), cert-manager with namespace-scoped Issuer (no access to cluster-scoped resources).
