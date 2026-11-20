@@ -1,1 +1,13 @@
 
+
+Bonjour Christophe,
+
+Pour rebondir sur la proposition de Julien, penses-tu qu’il serait possible :
+
+d’accélérer le traitement du case 77812431 (purge de l’org) ;
+puis, une fois l’org recréée, de caler un call avec l’équipe on-call API hub pour supprimer l’instance par défaut en live, pendant que je relance la création en CMEK ?
+
+Tout est prêt de notre côté pour enchaîner.
+
+Merci,
+Youssouf
