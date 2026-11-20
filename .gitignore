@@ -1,13 +1,14 @@
+Hello Madhavi,
 
+Thank you for the update and for handling the hard deletion.
 
-Bonjour Christophe,
+We tried to recreate the organization prj-ocp-apim-hprd-apihub-y7h, but the creation fails with:
 
-Pour rebondir sur la proposition de Julien, penses-tu qu’il serait possible :
+Error 400: the resource is locked by another operation: 64f45a7d-ea8f-440a-aa0c-2e445b2d9423
 
-d’accélérer le traitement du case 77812431 (purge de l’org) ;
-puis, une fois l’org recréée, de caler un call avec l’équipe on-call API hub pour supprimer l’instance par défaut en live, pendant que je relance la création en CMEK ?
+Could you please check whether the permanent deletion operation is fully completed on your side, and release the lock if needed?
 
-Tout est prêt de notre côté pour enchaîner.
+Please keep the case open until we have successfully recreated the organization. As a next step, once the org is recreated, a default API hub instance (GMEK) will be auto-provisioned. As advised by the API hub product team (via Christophe Lalevée, in copy), we will need the API hub on-call team to deprovision only this API hub instance, without deleting the Apigee organization, so that we can recreate it with CMEK.
 
-Merci,
-Youssouf
+Thank you,
+Youssouf ZIANE
