@@ -1,1 +1,40 @@
 
+Hello,
+
+Context
+
+Project: prj-ocp-apim-hprd-apihub-y7h (project number 235010008622)
+On 15/11/2026 we provisioned an Apigee X organization (CLOUD, PAYG, data residency fr / europe-west9, CMEK runtime DB, no runtime instance, retention = MINIMUM). Its only purpose is to support Apigee API hub.
+The org creation automatically provisioned a default API hub instance in GMEK. As our security requirements mandate CMEK, we followed the documented guidance and deprovisioned the default API hub instance from the console.
+As documented (“Any associated Apigee organizations (with no Apigee instances) are also deleted”), the Apigee org was deleted together with the API hub instance.
+
+Issue
+When we try to recreate the organization, the API returns:
+Error 409: already exists: org prj-ocp-apim-hprd-apihub-y7h already associated with another project
+The org appears to still be in soft-delete with a 7-day retention, even though retention = MINIMUM was set on the org.
+
+Request
+Could you please force the permanent deletion (purge) of the soft-deleted organization prj-ocp-apim-hprd-apihub-y7h, so that we can recreate it in the same project?
+
+This request follows guidance from our Google Apigee specialist, Christophe Lalevée (lalevee@google.com), who is in the loop.
+
+Thank you,
+Youssouf ZIANE
+
+2. Réponse à Christophe
+
+Bonjour Christophe,
+
+Merci pour ton retour et pour avoir sollicité l’équipe produit.
+
+J’ai essayé de reprovisionner l’org Apigee X ce matin, mais la création est refusée (409 already exists: org prj-ocp-apim-hprd-apihub-y7h already associated with another project). L’org est toujours en soft-delete, malgré la rétention à MINIMUM qui était positionnée sur l’org.
+
+Je suis donc ta préconisation en deux étapes :
+
+Case n°1 (ouvert) : forcer la purge de l’org soft-deleted. Numéro de case : [XXXX]
+Dès la purge confirmée, je reprovisionne l’org Apigee X, puis j’ouvre un case n°2 pour demander le déprovisionnement uniquement de l’instance API hub par défaut (GMEK), sans suppression de l’org. Je te communiquerai le numéro.
+
+Je te garde dans la boucle sur les deux cases.
+
+Merci,
+Youssouf
