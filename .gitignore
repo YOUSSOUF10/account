@@ -1,81 +1,14 @@
+Hello,
 
-############################################
-# 1. APIs + service agent API hub (module)
-############################################
+Thank you for your support. We confirm that the API hub instance apihub-hprd is now provisioned with CMEK and active on our host project prj-ocp-apim-hprd-apihub-y7h (europe-west9).
 
-module "project_services" {
-  source = "../modules/project-services"
+However, when we attach our Apigee hybrid runtime project apigee-ocp-tech to this API hub, the project is attached but the plugin instance creation fails:
 
-  project_id = var.host_project_id
-  services = [
-    "cloudresourcemanager.googleapis.com",
-    "iam.googleapis.com",
-    "apihub.googleapis.com",
-  ]
-  service_agent_for = "apihub.googleapis.com"
-}
+Plugin: projects/prj-ocp-apim-hprd-apihub-y7h/locations/europe-west9/plugins/system-apigee-x-and-hybrid
+Instance: "Apigee X and Hybrid - apigee-ocp-tech"
+Error: "Failed to create plugin instance – an internal error has occurred" (same result on Retry)
 
-resource "google_project_iam_member" "apihub_sa_roles" {
-  for_each = toset([
-    "roles/apihub.admin",
-    "roles/apihub.runtimeProjectServiceAgent",
-  ])
+Could you please investigate this error? Screenshots attached.
 
-  project = var.host_project_id
-  role    = each.key
-  member  = module.project_services.service_agent_member
-}
-
-############################################
-# 2. Accès du service agent API hub à sa clé (projet KMS)
-############################################
-
-resource "google_kms_crypto_key_iam_member" "apihub" {
-  crypto_key_id = var.cmek_key_id
-  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = module.project_services.service_agent_member
-}
-
-############################################
-# 3. Host project registration (optionnel)
-############################################
-
-resource "google_apihub_host_project_registration" "this" {
-  count = var.manage_host_project_registration ? 1 : 0
-
-  project                      = var.host_project_id
-  location                     = var.location
-  host_project_registration_id = var.host_project_id
-  gcp_project                  = "projects/${var.host_project_id}"
-
-  depends_on = [module.project_services]
-}
-
-############################################
-# 4. Instance API hub (CMEK)
-############################################
-# L'instance GMEK par défaut doit avoir été supprimée par Google avant l'apply.
-
-resource "google_apihub_api_hub_instance" "this" {
-  project             = var.host_project_id
-  location            = var.location
-  api_hub_instance_id = var.api_hub_instance_id
-  description         = var.description
-
-  config {
-    encryption_type = "CMEK"
-    cmek_key_name   = var.cmek_key_id
-    disable_search  = var.disable_search
-    vertex_location = var.disable_search ? null : var.vertex_location
-  }
-
-  depends_on = [
-    google_project_iam_member.apihub_sa_roles,
-    google_kms_crypto_key_iam_member.apihub,
-    google_apihub_host_project_registration.this,
-  ]
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
+Thank you,
+ ZIANE
